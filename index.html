@@ -23,6 +23,17 @@
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     input[type=number] { -moz-appearance: textfield; }
+
+    /* Professional account area: logout first, email directly underneath. */
+    #account-area {
+      line-height: 1.2;
+    }
+    @media (max-width: 639px) {
+      #account-area {
+        border-top: 1px solid rgba(199, 210, 254, 0.16);
+        padding-top: 4px;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col overflow-x-hidden">
@@ -50,10 +61,16 @@
           <i class="fa-solid fa-receipt mr-1.5"></i> Sales
         </button>
       </nav>
-      <div class="absolute top-3 right-4 flex items-center gap-2 z-40">
-        <span id="cloud-user" class="hidden text-[11px] text-indigo-100 truncate max-w-[180px]"></span>
-        <button id="cloud-logout" onclick="signOutCloud()" class="hidden px-3 py-2 rounded-lg bg-indigo-800 text-xs font-bold shadow-sm hover:bg-indigo-900 transition active:scale-95">
+      <div id="account-area" class="hidden w-full sm:w-auto sm:min-w-[180px] flex flex-col items-stretch sm:items-end gap-1.5">
+        <button id="cloud-logout" onclick="signOutCloud()" class="hidden w-full sm:w-auto px-3 py-2 rounded-lg bg-indigo-800 text-xs font-bold shadow-sm hover:bg-indigo-900 transition active:scale-95">
           <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
+        </button>
+        <div id="cloud-user" class="hidden text-[11px] text-indigo-100 text-center sm:text-right truncate max-w-full sm:max-w-[220px] px-1"></div>
+        <button id="merchant-settings-btn" onclick="openMerchantSettings()" class="hidden text-[10px] font-semibold text-indigo-200 hover:text-white transition">
+          <i class="fa-solid fa-gear mr-1"></i> M-Pesa Settings
+        </button>
+        <button id="admin-panel-btn" onclick="openAdminPanel()" class="hidden text-[10px] font-semibold text-amber-200 hover:text-white transition">
+          <i class="fa-solid fa-shield-halved mr-1"></i> Admin
         </button>
       </div>
     </div>
@@ -260,6 +277,89 @@
 
   <!-- MODALS -->
 
+  <!-- Merchant / M-Pesa Settings Modal -->
+  <div id="merchant-settings-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[90] flex items-center justify-center hidden p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="merchant-settings-content">
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-slate-800 text-lg">M-Pesa Business Settings</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Configure the till used for customer payments.</p>
+        </div>
+        <button onclick="closeMerchantSettings()" class="text-slate-400 hover:text-slate-600 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="merchant-settings-form" onsubmit="saveMerchantSettings(event)" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Business name</label>
+          <input id="merchant-business-name" type="text" maxlength="80" placeholder="My Smart Market"
+            class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">M-Pesa Till Number</label>
+          <input id="merchant-till-number" type="text" inputmode="numeric" maxlength="20" required placeholder="e.g. 1234567"
+            class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-lg font-bold tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+          <p class="text-[11px] text-slate-500 mt-2">
+            Enter only your Till Number. Your Smart Market administrator will connect it to PayHero and assign the payment channel.
+          </p>
+        </div>
+
+        <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs">
+          <div class="flex justify-between gap-3">
+            <span class="text-slate-500">Connection status</span>
+            <span id="merchant-connection-status" class="font-bold text-amber-600">Not connected</span>
+          </div>
+          <div class="flex justify-between gap-3 mt-1.5">
+            <span class="text-slate-500">PayHero channel</span>
+            <span id="merchant-channel-display" class="font-bold text-slate-700">Not assigned</span>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+          <i class="fa-solid fa-shield-halved mr-1"></i>
+          PayHero API keys and channel assignment are managed securely by Smart Market. They are never stored in this HTML file.
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeMerchantSettings()" class="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition">
+            Cancel
+          </button>
+          <button type="submit" class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 transition active:scale-95">
+            Save Settings
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Smart Market Admin / PayHero Channel Approval Modal -->
+  <div id="admin-panel-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[95] flex items-center justify-center hidden p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="admin-panel-content">
+      <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-slate-800 text-lg">Smart Market Admin</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Approve Till Numbers and assign PayHero Channel IDs.</p>
+        </div>
+        <button onclick="closeAdminPanel()" class="text-slate-400 hover:text-slate-600 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto max-h-[75vh]">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-sm font-bold text-slate-700">Merchant payment connections</div>
+          <button onclick="loadAdminMerchants()" class="text-xs px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold hover:bg-indigo-100">
+            <i class="fa-solid fa-rotate mr-1"></i> Refresh
+          </button>
+        </div>
+        <div id="admin-merchant-list" class="space-y-3">
+          <div class="text-sm text-slate-400 text-center py-8">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Checkout Custom Modal -->
   <div id="checkout-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300" id="checkout-modal-content">
@@ -316,6 +416,14 @@
             </div>
           </div>
           <p class="text-[11px] text-slate-500 mb-2">The customer will receive an STK Push on this number.</p>
+          <div class="flex items-center justify-between gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+            <span class="text-[10px] font-semibold text-emerald-800 truncate">
+              Till: <span id="checkout-till-display">Not configured</span>
+            </span>
+            <button type="button" onclick="openMerchantSettings()" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 whitespace-nowrap">
+              Change
+            </button>
+          </div>
           <button id="btn-mpesa-prompt" onclick="initiateMpesaPayment()" class="w-full py-3.5 bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold rounded-xl hover:bg-emerald-200 transition shadow-sm active:scale-[0.98]">
             Prompt Customer
           </button>
@@ -458,6 +566,8 @@
       appId: '1:264106827539:web:92652dfe052dad1fd0c4e6',
       measurementId: 'G-KEJP9TCQCW'
     };
+    // IMPORTANT: This is your secure backend URL. Do NOT put PayHero API keys
+    // or secrets in this HTML. GitHub Pages should only call your backend.
     const API_BASE_URL = 'PASTE_YOUR_BACKEND_URL_HERE';
 
     const cloudConfigured = !!(
@@ -497,6 +607,363 @@
 
     let posScanner = null;
     let invScanner = null;
+
+    // ===== MERCHANT / M-PESA ACCOUNT SETTINGS =====
+    // A shop can edit its own business name and Till number.
+    // PayHero channel assignment is ADMIN-ONLY and is stored separately by
+    // the secure Node.js backend. The browser never decides which channel
+    // receives a payment.
+    let merchantSettings = {
+      businessName: '',
+      tillNumber: '',
+      payheroChannelId: '',
+      paymentStatus: 'not_configured'
+    };
+    let isSmartMarketAdmin = false;
+
+    function merchantSettingsRef() {
+      if (!firebaseDb || !currentUser) throw new Error('Not signed in.');
+      return firebaseDb.ref('users/' + currentUser.uid + '/merchantSettings');
+    }
+
+    async function loadMerchantSettings() {
+      if (!firebaseDb || !currentUser) return;
+
+      try {
+        const snap = await merchantSettingsRef().once('value');
+        const data = snap.val() || {};
+
+        // Channel ID/status are intentionally NOT trusted from this path.
+        merchantSettings = {
+          businessName: String(data.businessName || ''),
+          tillNumber: String(data.tillNumber || ''),
+          payheroChannelId: '',
+          paymentStatus: data.tillNumber ? 'pending' : 'not_configured'
+        };
+
+        const nameInput = document.getElementById('merchant-business-name');
+        const tillInput = document.getElementById('merchant-till-number');
+        if (nameInput) nameInput.value = merchantSettings.businessName;
+        if (tillInput) tillInput.value = merchantSettings.tillNumber;
+
+        updateMerchantConnectionUI();
+        await refreshMerchantConnectionStatus();
+      } catch (err) {
+        console.error('Merchant settings load error:', err);
+      }
+    }
+
+    async function refreshMerchantConnectionStatus() {
+      if (!currentUser || !API_BASE_URL || API_BASE_URL.includes('PASTE_YOUR')) {
+        updateMerchantConnectionUI();
+        return;
+      }
+
+      try {
+        const data = await backendFetch('/api/merchant/payment-status');
+        const connection = data.connection || {};
+
+        // The backend decides the actual connection state.
+        merchantSettings.payheroChannelId = '';
+        merchantSettings.paymentStatus = String(
+          connection.status || (merchantSettings.tillNumber ? 'pending' : 'not_configured')
+        );
+
+        updateMerchantConnectionUI();
+      } catch (err) {
+        // Keep the UI useful even before the backend has been deployed.
+        merchantSettings.payheroChannelId = '';
+        merchantSettings.paymentStatus = merchantSettings.tillNumber ? 'pending' : 'not_configured';
+        updateMerchantConnectionUI();
+      }
+    }
+
+    function updateMerchantConnectionUI() {
+      const tillDisplay = document.getElementById('checkout-till-display');
+      if (tillDisplay) tillDisplay.textContent = merchantSettings.tillNumber || 'Not configured';
+
+      const status = document.getElementById('merchant-connection-status');
+      const channel = document.getElementById('merchant-channel-display');
+      if (!status || !channel) return;
+
+      const map = {
+        connected: ['Connected', 'text-emerald-600'],
+        pending: ['Pending approval', 'text-amber-600'],
+        rejected: ['Rejected', 'text-rose-600'],
+        suspended: ['Suspended', 'text-rose-600'],
+        not_configured: ['Not configured', 'text-slate-500']
+      };
+
+      const item = map[merchantSettings.paymentStatus] || map.not_configured;
+      status.textContent = item[0];
+      status.className = 'font-bold ' + item[1];
+
+      // Channel IDs are admin/internal values. Do not expose them to normal users.
+      channel.textContent = merchantSettings.paymentStatus === 'connected'
+        ? 'Connected'
+        : 'Not assigned';
+    }
+
+    function openMerchantSettings() {
+      const modal = document.getElementById('merchant-settings-modal');
+      const content = document.getElementById('merchant-settings-content');
+      if (!modal || !content) return;
+
+      document.getElementById('merchant-business-name').value = merchantSettings.businessName || '';
+      document.getElementById('merchant-till-number').value = merchantSettings.tillNumber || '';
+
+      modal.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+      });
+    }
+
+    function closeMerchantSettings() {
+      const modal = document.getElementById('merchant-settings-modal');
+      const content = document.getElementById('merchant-settings-content');
+      if (!modal || !content) return;
+
+      modal.classList.add('opacity-0');
+      content.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+
+    async function saveMerchantSettings(e) {
+      e.preventDefault();
+      if (!firebaseDb || !currentUser) return showToast('Please sign in first.', 'error');
+
+      const businessName = document.getElementById('merchant-business-name').value.trim();
+      const tillNumber = document.getElementById('merchant-till-number').value.replace(/\s+/g, '').trim();
+
+      if (!/^\d{5,20}$/.test(tillNumber)) {
+        return showToast('Enter a valid M-Pesa Till Number.', 'error');
+      }
+
+      const saveButton = document.querySelector('#merchant-settings-form button[type="submit"]');
+      if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Saving...';
+      }
+
+      try {
+        const tillChanged = tillNumber !== merchantSettings.tillNumber;
+
+        // IMPORTANT: never write a PayHero channel ID from the browser.
+        await merchantSettingsRef().update({
+          businessName,
+          tillNumber,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        merchantSettings.businessName = businessName;
+        merchantSettings.tillNumber = tillNumber;
+
+        if (tillChanged) {
+          merchantSettings.payheroChannelId = '';
+          merchantSettings.paymentStatus = 'pending';
+        }
+
+        updateMerchantConnectionUI();
+        closeMerchantSettings();
+
+        if (tillChanged) {
+          showToast('Till submitted. Waiting for Smart Market approval.', 'success');
+        } else {
+          showToast('M-Pesa business settings saved.', 'success');
+        }
+
+        await refreshMerchantConnectionStatus();
+      } catch (err) {
+        console.error('Merchant settings save error:', err);
+        showToast('Could not save M-Pesa settings.', 'error');
+      } finally {
+        if (saveButton) {
+          saveButton.disabled = false;
+          saveButton.innerHTML = 'Save Settings';
+        }
+      }
+    }
+
+    async function backendFetch(path, options = {}) {
+      if (!firebaseAuth || !firebaseAuth.currentUser) throw new Error('Login session expired.');
+      if (!API_BASE_URL || API_BASE_URL.includes('PASTE_YOUR')) {
+        throw new Error('Smart Market backend URL is not configured.');
+      }
+
+      const idToken = await firebaseAuth.currentUser.getIdToken();
+      const headers = Object.assign({}, options.headers || {}, {
+        'Authorization': 'Bearer ' + idToken
+      });
+
+      if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+
+      const response = await fetch(
+        (API_BASE_URL || '').replace(/\/$/, '') + path,
+        Object.assign({}, options, { headers })
+      );
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || 'Request failed.');
+      }
+
+      return data;
+    }
+
+    async function checkAdminAccess() {
+      if (!API_BASE_URL || API_BASE_URL.includes('PASTE_YOUR') || !firebaseAuth || !firebaseAuth.currentUser) return;
+
+      try {
+        const data = await backendFetch('/api/admin/me');
+        isSmartMarketAdmin = !!data.isAdmin;
+        document.getElementById('admin-panel-btn')?.classList.toggle('hidden', !isSmartMarketAdmin);
+      } catch (err) {
+        isSmartMarketAdmin = false;
+        document.getElementById('admin-panel-btn')?.classList.add('hidden');
+      }
+    }
+
+    function openAdminPanel() {
+      if (!isSmartMarketAdmin) return showToast('Admin access required.', 'error');
+
+      const modal = document.getElementById('admin-panel-modal');
+      const content = document.getElementById('admin-panel-content');
+      modal.classList.remove('hidden');
+
+      requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+      });
+
+      loadAdminMerchants();
+    }
+
+    function closeAdminPanel() {
+      const modal = document.getElementById('admin-panel-modal');
+      const content = document.getElementById('admin-panel-content');
+      modal.classList.add('opacity-0');
+      content.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+
+    async function loadAdminMerchants() {
+      const box = document.getElementById('admin-merchant-list');
+      if (!box) return;
+
+      box.innerHTML = '<div class="text-sm text-slate-400 text-center py-8"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading merchants...</div>';
+
+      try {
+        const data = await backendFetch('/api/admin/merchants');
+
+        if (!data.merchants?.length) {
+          box.innerHTML = '<div class="text-sm text-slate-400 text-center py-8">No Till requests yet.</div>';
+          return;
+        }
+
+        box.innerHTML = data.merchants.map(m => {
+          const safe = String(m.userId).replace(/[^a-zA-Z0-9_-]/g, '');
+          const statusClass = m.paymentStatus === 'connected'
+            ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+            : m.paymentStatus === 'rejected'
+              ? 'text-rose-600 bg-rose-50 border-rose-200'
+              : 'text-amber-700 bg-amber-50 border-amber-200';
+
+          return `
+            <div class="border border-slate-200 rounded-xl p-4 bg-white shadow-sm">
+              <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="font-bold text-slate-800">${escapeHtml(m.businessName || 'Unnamed business')}</div>
+                  <div class="text-xs text-slate-500 mt-1">${escapeHtml(m.email || m.userId)}</div>
+                  <div class="text-sm font-bold text-slate-700 mt-2">Till: ${escapeHtml(m.tillNumber || 'Not provided')}</div>
+                  <div class="text-xs text-slate-500 mt-1">Assigned channel: ${escapeHtml(m.payheroChannelId || 'Not assigned')}</div>
+                  <span class="inline-flex mt-2 px-2 py-1 rounded-full border text-[11px] font-bold ${statusClass}">${escapeHtml(m.paymentStatus || 'pending')}</span>
+                </div>
+
+                <div class="w-full md:w-72">
+                  <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1">
+                    PayHero Channel ID
+                  </label>
+
+                  <input id="admin-channel-${safe}"
+                    value="${escapeHtml(m.payheroChannelId || '')}"
+                    placeholder="Enter channel ID"
+                    inputmode="numeric"
+                    class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+
+                  <div class="grid grid-cols-2 gap-2 mt-2">
+                    <button onclick="approveMerchantChannel('${safe}', '${encodeURIComponent(m.userId)}')"
+                      class="px-3 py-2.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700">
+                      Approve / Connect
+                    </button>
+
+                    <button onclick="rejectMerchantChannel('${encodeURIComponent(m.userId)}')"
+                      class="px-3 py-2.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold hover:bg-rose-100">
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (err) {
+        box.innerHTML = `<div class="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-4">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&':'&amp;',
+        '<':'&lt;',
+        '>':'&gt;',
+        '"':'&quot;',
+        "'":'&#039;'
+      }[ch]));
+    }
+
+    async function approveMerchantChannel(safeUserId, encodedUserId) {
+      const userId = decodeURIComponent(encodedUserId);
+      const input = document.getElementById('admin-channel-' + safeUserId);
+      const channelId = input ? input.value.trim() : '';
+
+      if (!/^\d+$/.test(channelId)) {
+        return showToast('Enter the numeric PayHero Channel ID.', 'error');
+      }
+
+      try {
+        await backendFetch('/api/admin/merchants/' + encodeURIComponent(userId) + '/channel', {
+          method: 'POST',
+          body: JSON.stringify({
+            channelId,
+            status: 'connected'
+          })
+        });
+
+        showToast('PayHero Channel ID assigned successfully.', 'success');
+        await loadAdminMerchants();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function rejectMerchantChannel(encodedUserId) {
+      const userId = decodeURIComponent(encodedUserId);
+
+      try {
+        await backendFetch('/api/admin/merchants/' + encodeURIComponent(userId) + '/channel', {
+          method: 'POST',
+          body: JSON.stringify({
+            channelId: '',
+            status: 'rejected'
+          })
+        });
+
+        showToast('Till request rejected.', 'success');
+        await loadAdminMerchants();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
 
     function productsRef() {
       if (!firebaseDb || !currentUser) throw new Error('Not signed in.');
@@ -799,6 +1266,10 @@
       document.getElementById('cloud-user').textContent = user.email || 'Cloud account';
       document.getElementById('cloud-user').classList.remove('hidden');
       document.getElementById('cloud-logout').classList.remove('hidden');
+      document.getElementById('account-area').classList.remove('hidden');
+      document.getElementById('merchant-settings-btn').classList.remove('hidden');
+      await loadMerchantSettings();
+      await checkAdminAccess();
 
       // Load the user's data before hiding the login screen. This prevents a
       // successful Firebase login from looking like a failed login when a
@@ -854,6 +1325,10 @@
           document.getElementById('auth-modal').classList.remove('hidden');
           document.getElementById('cloud-user').classList.add('hidden');
           document.getElementById('cloud-logout').classList.add('hidden');
+          document.getElementById('account-area').classList.add('hidden');
+          document.getElementById('merchant-settings-btn').classList.add('hidden');
+          document.getElementById('admin-panel-btn').classList.add('hidden');
+          isSmartMarketAdmin = false;
           resetGoogleButton();
           hideAuthError();
           const pw = document.getElementById('auth-password');
@@ -1177,6 +1652,14 @@
       if (!/^(\+254|254|0)7\d{8}$/.test(phone.replace(/\s+/g, '')))
         return showToast("Enter a valid Kenyan M-Pesa phone number", "error");
       if (!Number.isFinite(total) || total <= 0) return showToast("Invalid payment amount.", "error");
+      if (!merchantSettings.tillNumber) {
+        openMerchantSettings();
+        return showToast("Set the M-Pesa Till Number before taking M-Pesa payments.", "error");
+      }
+      if (merchantSettings.paymentStatus !== 'connected') {
+        openMerchantSettings();
+        return showToast("This Till is waiting for Smart Market approval before M-Pesa payments can be used.", "error");
+      }
       if (!MPESA_API_URL) return showToast("PayHero backend URL is not configured.", "error");
 
       const statusDiv = document.getElementById('mpesa-status');
@@ -1195,7 +1678,11 @@
         const response = await fetch(MPESA_API_URL, {
           method: 'POST',
           headers: {'Content-Type':'application/json','Authorization':'Bearer '+idToken},
-          body: JSON.stringify({ phone, amount: Math.round(total), reference })
+          body: JSON.stringify({
+            phone,
+            amount: Math.round(total),
+            reference
+          })
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data.success) throw new Error(data.message || 'Unable to start PayHero payment.');
